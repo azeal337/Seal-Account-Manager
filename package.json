@@ -1,0 +1,130 @@
+{
+  "name": "seal-account-manager",
+  "version": "1.0.0",
+  "displayVersion": "1.00.00",
+  "description": "Portable Roblox account manager with multi-instance launching, playtime insights, custom performance presets, activity tracking, and client customization",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test:discord": "node scripts/test-discord-presence.js",
+    "test:auth": "node scripts/test-auth-cookie-rotation.js",
+    "test:account-encryption": "node scripts/test-account-encryption.js",
+    "test:bulk-import": "node scripts/test-bulk-import.js",
+    "test:bulk-import-ui": "electron scripts/test-bulk-import-ui.js",
+    "test:library-focus": "electron scripts/test-library-focus.js",
+    "test:settings": "electron scripts/test-account-settings.js",
+    "test:login-session": "electron scripts/test-electron-login-session.js",
+    "test:time": "node scripts/test-playtime-store.js",
+    "test:launch-pacing": "node scripts/test-launch-pacing.js",
+    "test:performance-presets": "node scripts/test-performance-presets.js",
+    "test:performance-off": "node scripts/test-performance-off.js",
+    "test:performance-ui": "electron scripts/test-performance-ui.js",
+    "build:native": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-native-helpers.ps1",
+    "build": "npm run build:native && electron-builder --win nsis",
+    "build:portable": "npm run build:native && electron-builder --win portable && npm run test:portable",
+    "build:installer": "npm run build:native && electron-builder --win nsis",
+    "build:all": "npm run build:native && electron-builder --win nsis portable",
+    "test:stability": "node scripts/test-mutex-lifecycle.js && node scripts/test-server-hub-state.js && electron scripts/test-account-store-recovery.js && electron scripts/test-account-store-ui.js",
+    "test:portable": "node scripts/test-portable-runtime.js",
+    "test:launch-ui": "node scripts/run-electron-test.js scripts/test-launch-splash-ui.js && electron scripts/test-unlinked-sessions-ui.js && electron scripts/test-launch-preparation-ui.js",
+    "test:badge-games": "node scripts/test-badge-inventory.js && node scripts/test-owned-badge-api.js && node scripts/run-electron-test.js scripts/test-badge-games-ui.js",
+    "test:cache-repair": "node scripts/test-cache-repair.js && node scripts/run-electron-test.js scripts/test-cache-repair-ui.js",
+    "test:metadata-routing": "node scripts/test-game-metadata.js && node scripts/test-join-routing.js && node scripts/run-electron-test.js scripts/test-metadata-routing-ui.js",
+    "test:metadata-speed": "node scripts/test-metadata-speed.js && node scripts/test-badge-icon-cache.js && node scripts/run-electron-test.js scripts/test-metadata-speed-ui.js",
+    "test:game-library": "node scripts/test-game-library.js && node scripts/run-electron-test.js scripts/test-game-library-ui.js",
+    "test:background": "node scripts/test-background-mode.js && node scripts/run-electron-test.js scripts/test-background-ui.js && node scripts/run-electron-test.js scripts/test-background-ui.js --network-stalled",
+    "test:background-recovery": "node scripts/test-current-activity.js && node scripts/test-presence-timeout.js && node scripts/test-session-recovery.js",
+    "test:quiet-launch": "node scripts/test-native-hidden.js && node scripts/test-quiet-launch.js && node scripts/run-electron-test.js scripts/test-quiet-launch-ui.js",
+    "test:badge-dates": "node scripts/test-badge-award-dates.js && node scripts/test-award-dates-api.js && node scripts/run-electron-test.js scripts/test-badge-dates-ui.js"
+  },
+  "build": {
+    "appId": "com.local.sealaccountmanager",
+    "productName": "Seal Account Manager",
+    "buildVersion": "1.00.00",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "src/**/*",
+      "!src/SealMutexHolder.exe",
+      "!src/SealProcessSleeper.exe",
+      "!src/SealMutexHolder.cpp",
+      "!src/SealProcessSleeper.cpp",
+      "!src/antiIdle.ps1",
+      "!src/repairJoinHosts.ps1",
+      "!src/seal-mod-assets/**/*",
+      "build/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "publisherName": "Seal Account Manager",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "artifactName": "Seal-Account-Manager-Setup-${buildVersion}.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Seal Account Manager",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "include": "build/installer.nsh",
+      "runAfterFinish": false
+    },
+    "portable": {
+      "artifactName": "Seal-Account-Manager-${buildVersion}-Portable.${ext}",
+      "unpackDirName": true
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "icon": "build/icon.ico",
+    "executableName": "Seal Account Manager",
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "build/icon.ico",
+        "to": "build/icon.ico"
+      },
+      {
+        "from": "src/SealMutexHolder.exe",
+        "to": "SealMutexHolder.exe"
+      },
+      {
+        "from": "src/SealProcessSleeper.exe",
+        "to": "SealProcessSleeper.exe"
+      },
+      {
+        "from": "src/antiIdle.ps1",
+        "to": "antiIdle.ps1"
+      },
+      {
+        "from": "src/repairJoinHosts.ps1",
+        "to": "repairJoinHosts.ps1"
+      },
+      {
+        "from": "src/seal-mod-assets",
+        "to": "seal-mod-assets"
+      }
+    ],
+    "forceCodeSigning": false
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}
