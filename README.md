@@ -4,7 +4,7 @@ Seal Account Manager (SAM) is a portable Windows app for managing Roblox account
 
 [Download for Windows x64](https://github.com/azeal337/Seal-Account-Manager/releases/latest) · [Getting started](docs/GETTING-STARTED.md) · [Contributing](CONTRIBUTING.md)
 
-![SAM 1.00.00 in the Lord of the Mysteries theme, with fictional accounts](docs/screenshots/dashboard.png)
+!(docs/screenshots/dashboard.png)
 
 ## Features
 
