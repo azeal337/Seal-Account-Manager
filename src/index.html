@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://*.rbxcdn.com data:; style-src 'self' 'unsafe-inline';" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seal Account Manager</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <canvas id="ambientCanvas" class="ambient-canvas" aria-hidden="true"></canvas>
+    <header class="app-header">
+      <div class="brand-lockup">
+        <div class="brand-icon-wrap"><img class="brand-logo" src="brand-seal.png" alt="" /></div>
+        <div class="brand-copy">
+          <div class="brand-name-row"><strong>SEAL</strong><small id="appVersion"></small></div>
+          <span>ACCOUNT MANAGER</span>
+        </div>
+      </div>
+
+      <button id="openLauncherSettingsBtn" class="system-status" type="button">
+        <span class="status-pulse"></span>
+        <span>
+          <strong>Roblox status</strong>
+          <small id="launcherOverviewStatus">Checking launcher…</small>
+        </span>
+      </button>
+
+      <div class="window-controls" aria-label="Window controls">
+        <button id="notificationCenterBtn" class="notification-center-btn" type="button" aria-label="Open notification center" title="Notifications">
+          <span aria-hidden="true">&#9673;</span><b id="notificationUnreadCount" hidden>0</b>
+        </button>
+        <button id="minimizeAppBtn" type="button" aria-label="Minimize">−</button>
+        <button id="maximizeAppBtn" type="button" aria-label="Maximize" title="Maximize window">&#9633;</button>
+        <button id="closeAppBtn" type="button" aria-label="Close to tray" title="Close to tray — tracking continues">×</button>
+      </div>
+
+      <div class="header-actions">
+        <button id="mainMenuNavBtn" class="btn btn-quiet nav-active" type="button">Main menu</button>
+        <button id="customizeBtn" class="btn btn-quiet" type="button">Customize</button>
+        <button id="launcherNavBtn" class="btn btn-quiet" type="button">Launcher</button>
+        <button id="timeNavBtn" class="btn btn-quiet" type="button">Time</button>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="account-workbench">
+        <div id="recoveryBanner" class="recovery-banner" hidden>
+          <div class="recovery-symbol">↻</div>
+          <div>
+            <strong>Interrupted launch found</strong>
+            <p id="recoveryText">Seal can continue where it stopped.</p>
+          </div>
+          <button id="dismissRecoveryBtn" class="btn btn-quiet" type="button">Dismiss</button>
+          <button id="resumeRecoveryBtn" class="btn btn-primary" type="button">Continue launch</button>
+        </div>
+
+        <div class="workbench-heading">
+          <div>
+            <span class="section-kicker">YOUR ACCOUNTS</span>
+            <h1 data-mysteries-label="Accounts">Choose who is playing</h1>
+            <p>Pick accounts, tune their client settings, then launch them together.</p>
+          </div>
+          <div class="heading-stats">
+            <div><strong id="accountTotal">0</strong><span>saved</span></div>
+            <div><strong id="selectedTotal">0</strong><span>selected</span></div>
+          </div>
+        </div>
+
+        <div class="account-toolbar">
+          <label class="search-field">
+            <span>⌕</span>
+            <input id="accountSearchInput" type="search" placeholder="Find an account" autocomplete="off" />
+          </label>
+          <button id="addAccountBtn" class="btn btn-primary" type="button">Add account</button>
+          <button id="bulkAddBtn" class="btn btn-quiet" type="button">Bulk add</button>
+          <button id="addFolderBtn" class="btn btn-quiet" type="button">+ Folder</button>
+          <button id="selectAllBtn" class="btn btn-quiet" type="button">Select all</button>
+          <button id="bulkConfigBtn" class="btn btn-quiet" type="button">Bulk settings</button>
+          <button id="checkCookiesBtn" class="btn btn-quiet" type="button">Check sessions</button>
+          <button id="checkSelectedStatusBtn" class="btn btn-quiet" type="button" disabled>Check status</button>
+          <button id="forceQuitBtn" class="btn btn-danger-subtle" type="button" disabled>Close selected</button>
+          <span id="selectedCount" class="selected-count">0 selected</span>
+        </div>
+
+        <section class="accounts" id="accountsList" aria-label="Saved accounts"></section>
+        <div class="empty-state" id="emptyState" hidden>
+          <div class="empty-symbol">S</div>
+          <strong>No accounts here</strong>
+          <p>Add an account or clear your search to get started.</p>
+          <button id="emptyAddAccountBtn" class="btn btn-primary" type="button">Add account</button>
+        </div>
+        <figure class="tarot-illustration tarot-magician" aria-hidden="true">
+          <span class="tarot-number">I</span>
+          <canvas data-tarot-art="magician" width="360" height="300"></canvas>
+          <figcaption>The Magician</figcaption>
+        </figure>
+      </section>
+
+      <aside class="control-deck">
+        <section class="deck-card launch-card">
+          <div class="deck-heading">
+            <div>
+              <span class="section-kicker">LAUNCH DESK</span>
+              <h2 data-mysteries-label="Launch">Start a session</h2>
+            </div>
+            <figure class="tarot-illustration tarot-chariot" aria-hidden="true">
+              <canvas data-tarot-art="chariot" width="360" height="300"></canvas>
+              <figcaption>The Chariot</figcaption>
+            </figure>
+            <span class="selection-orb" id="selectedLaunchCount">0</span>
+          </div>
+
+          <label class="field-label" for="joinUsername">Destination</label>
+          <input type="text" id="joinUsername" class="target-input" placeholder="Game link, place ID, username, or private server" />
+
+          <div class="target-tools">
+            <select id="gameFavoriteSelect" title="Saved servers">
+              <option value="">Choose a saved server</option>
+            </select>
+            <button id="openServerLibraryBtn" class="btn btn-quiet" type="button">Server library</button>
+          </div>
+
+          <div class="launch-summary">
+            <span id="launchStatus" class="launch-status" aria-live="polite">Ready when you are</span>
+            <small>Duplicate accounts are blocked automatically.</small>
+          </div>
+          <button id="launchSelectedBtn" class="btn btn-launch" type="button" disabled>
+            <span>Launch selected</span><span aria-hidden="true">→</span>
+          </button>
+        </section>
+
+        <section class="deck-card sessions-card">
+          <div class="deck-heading">
+            <div>
+              <span class="section-kicker">LIVE NOW</span>
+              <h2 data-mysteries-label="Sessions">Session dashboard</h2>
+            </div>
+            <div class="session-heading-actions">
+              <button id="antiAfkSettingsBtn" class="icon-button" type="button" popovertarget="antiAfkSettingsPopover" title="Anti-AFK interval" aria-label="Anti-AFK settings">⚙</button>
+              <button id="antiIdleBtn" class="btn btn-quiet anti-afk-toggle" type="button" disabled>Anti-AFK off</button>
+              <button id="freezeSelectedDashboardBtn" class="btn btn-quiet session-freeze-selected" type="button" disabled>Freeze selected</button>
+              <button id="closeAllSessionsBtn" class="btn btn-danger-subtle session-close-all" type="button" disabled>Close all</button>
+              <button id="refreshSessionsBtn" class="icon-button" type="button" title="Refresh sessions">↻</button>
+            </div>
+          </div>
+          <div id="sessionCount" class="session-count">No tracked sessions</div>
+          <div id="antiAfkSettingsPopover" class="anti-afk-settings" popover="auto" role="dialog" aria-labelledby="antiAfkSettingsTitle">
+            <strong id="antiAfkSettingsTitle">Anti-AFK interval</strong>
+            <div class="anti-afk-interval-fields">
+              <label>Minutes <input id="antiAfkMinutes" type="number" min="0" max="1440" step="1" value="4" /></label>
+              <label>Seconds <input id="antiAfkSeconds" type="number" min="0" max="59" step="1" value="0" /></label>
+            </div>
+            <small id="antiAfkIntervalStatus" role="status" aria-live="polite">Loading interval…</small>
+          </div>
+          <div id="sessionsList" class="sessions-list">
+            <div class="session-empty">Launched accounts will appear here.</div>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <button id="pauseBtn" type="button" hidden>Pause Roblox</button>
+  <button id="freezeSelectedBtn" type="button" hidden disabled>Freeze</button>
+  <button id="unfreezeSelectedBtn" type="button" hidden disabled>Unfreeze</button>
+
+  <div id="bulkAddModal" class="modal-backdrop" hidden>
+    <div class="dialog-card bulk-add-window" role="dialog" aria-modal="true" aria-labelledby="bulkAddTitle">
+      <div class="modal-head"><h2 id="bulkAddTitle">Bulk add accounts</h2><button id="bulkAddClose" class="btn btn-quiet" type="button">Close</button></div>
+      <p>Paste usernames on the left and their passwords on the right. Row 1 matches row 1, row 2 matches row 2, and so on.</p>
+      <div class="bulk-add-columns">
+        <label for="bulkAddInput">Usernames<textarea id="bulkAddInput" autocomplete="off" spellcheck="false" wrap="off" placeholder="FirstUsername&#10;SecondUsername" aria-describedby="bulkAddPrivacy"></textarea></label>
+        <label for="bulkAddPasswords">Passwords<textarea id="bulkAddPasswords" autocomplete="off" spellcheck="false" wrap="off" placeholder="First password&#10;Second password" aria-describedby="bulkAddPrivacy"></textarea></label>
+      </div>
+      <small id="bulkAddRowCounts" role="status">0 usernames · 0 passwords</small>
+      <p id="bulkAddPrivacy">Passwords are used only for this import and are not saved. Close a login window to skip that account.</p>
+      <p id="bulkAddStatus" role="status" aria-live="polite"></p>
+      <ul id="bulkAddResults"></ul>
+      <div class="modal-actions">
+        <button id="bulkAddSkip" class="btn btn-quiet" type="button" hidden>Skip account</button>
+        <button id="bulkAddStop" class="btn btn-quiet" type="button" hidden>Stop import</button>
+        <button id="bulkAddStart" class="btn btn-primary" type="button">Start import</button>
+      </div>
+    </div>
+  </div>
+  <div id="launchConflictModal" class="modal-backdrop" hidden>
+    <div class="dialog-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="launchConflictTitle">
+      <div class="dialog-symbol warning">!</div>
+      <div>
+        <span class="section-kicker">MULTI-INSTANCE PREP</span>
+        <h2 id="launchConflictTitle">Another launcher owns Roblox’s lock</h2>
+        <p>Seal could not join this existing Roblox session. Closing that conflicting session is the only time Seal needs to restart Roblox; compatible Seal sessions stay open.</p>
+      </div>
+      <div class="modal-actions">
+        <button id="launchConflictCancelBtn" class="btn btn-quiet" type="button">Not now</button>
+        <button id="launchConflictContinueBtn" class="btn btn-primary" type="button">Close conflict and continue</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="serverLibraryModal" class="modal-backdrop" hidden>
+    <div class="dialog-card library-window" role="dialog" aria-modal="true" aria-labelledby="serverLibraryTitle">
+      <div class="modal-head">
+        <div>
+          <span class="section-kicker">DESTINATIONS</span>
+          <h2 id="serverLibraryTitle">Servers &amp; events</h2>
+          <p>Save game links, place IDs, and private-server links for quick launches.</p>
+        </div>
+        <button id="serverLibraryCloseBtn" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+
+      <section id="serverHub" class="server-hub">
+        <nav class="customize-tabs" aria-label="Server tools"><button class="btn btn-quiet" data-server-tab="public">Public servers</button><button class="btn btn-quiet" data-server-tab="history">Previous servers</button><button class="btn btn-quiet" data-server-tab="timers">Event clocks</button></nav>
+        <section id="serverPublicPanel">
+          <div class="hub-controls"><label>Game link or place ID<input id="serverBrowsePlace" type="text" placeholder="roblox.com/games/…" /></label><label>Population<select id="serverPopulation"><option value="high">Most players</option><option value="low">Fewest players</option></select></label><label>Observation order<select id="serverObserved"><option value="population">Population only</option><option value="new">Newest first seen</option><option value="old">Oldest first seen</option></select></label><label><input id="serverIncludeFull" type="checkbox" /> Include full servers</label><button id="serverBrowse" class="btn btn-primary">Find servers</button></div>
+          <p>First seen means when this copy of Seal first observed a server, not its creation time. Observation sorting covers the pages you load. A full server has no guaranteed join slot.</p>
+          <p id="serverBrowseStatus" role="status"></p><div id="publicServerRows" class="hub-rows"></div><button id="serverLoadMore" class="btn btn-quiet" hidden>Load more</button>
+        </section>
+        <section id="serverHistoryPanel" hidden><div class="hub-controls"><label>Account<select id="serverHistoryAccount"><option value="">All accounts</option></select></label><button id="serverHistoryRefresh" class="btn btn-quiet">Refresh history</button></div><p>Confirmed servers tracked by Seal from this update onward. Rejoining depends on the server still running and your access. Use a server, then select an account and launch.</p><div id="serverHistoryRows" class="hub-rows"></div></section>
+        <section id="serverTimersPanel" hidden><p id="serverClock"></p><p>Track repeating global events using a schedule you enter. This is your PC clock, not a game's day/night clock or detected event schedule. Timers are visible while Seal is open.</p><form id="serverTimerForm" class="hub-controls"><label>Game link or place ID<input id="serverTimerPlace" required /></label><label>Event name<input id="serverTimerName" maxlength="80" required placeholder="Hourly boss" /></label><label>Every (minutes)<input id="serverTimerMinutes" type="number" min="1" max="10080" value="60" required /></label><label>Known event time (your local time)<input id="serverTimerAnchor" type="datetime-local" required /></label><button class="btn btn-primary">Add countdown</button></form><div id="serverTimerRows" class="hub-rows"></div></section>
+        <p id="serverHubStatus" role="status"></p>
+      </section>
+      <h3>Saved destinations</h3>
+      <div class="server-editor">
+        <label>Name<input id="gameFavoriteName" type="text" maxlength="40" placeholder="e.g. Main private server" /></label>
+        <label>Server or game link<input id="serverTargetInput" type="text" placeholder="Paste a Roblox link or place ID" /></label>
+        <button id="addGameFavoriteBtn" class="btn btn-primary" type="button">Save destination</button>
+      </div>
+      <div id="gameFavoriteStatus" class="form-status" aria-live="polite"></div>
+      <div id="serverLibraryList" class="server-library-list"></div>
+      <button id="deleteGameFavoriteBtn" type="button" hidden disabled>Delete</button>
+    </div>
+  </div>
+
+  <div id="folderModal" class="modal-backdrop" hidden>
+    <div class="dialog-card folder-window" role="dialog" aria-modal="true" aria-labelledby="folderModalTitle">
+      <div class="modal-head">
+        <div>
+          <span class="section-kicker">ACCOUNT ORGANIZER</span>
+          <h2 id="folderModalTitle">Create a folder</h2>
+          <p>Name the folder, then click every account you want inside it.</p>
+        </div>
+        <button id="folderCloseBtn" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="folder-editor">
+        <div class="folder-identity-fields">
+          <label>Folder name<input id="folderNameInput" type="text" maxlength="32" placeholder="e.g. Grinding alts" /></label>
+          <label>Folder color<input id="folderColorInput" type="color" value="#5865f2" /></label>
+        </div>
+        <div>
+          <span class="folder-picker-label">ACCOUNTS IN THIS FOLDER</span>
+          <div id="folderAccountPicker" class="folder-account-picker"></div>
+        </div>
+      </div>
+      <div class="folder-footer">
+        <button id="folderDeleteBtn" class="btn btn-danger-subtle" type="button" hidden>Delete folder</button>
+        <div>
+          <button id="folderCancelBtn" class="btn btn-quiet" type="button">Cancel</button>
+          <button id="folderSaveBtn" class="btn btn-primary" type="button">Save folder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="customizeModal" class="modal-backdrop" hidden>
+    <div class="dialog-card settings-window">
+      <div class="modal-head">
+        <div>
+          <span class="section-kicker">APPEARANCE</span>
+          <h2 id="settingsWindowTitle">Customize Seal</h2>
+          <p id="settingsWindowSubtitle">Start with a complete look, then change only what matters to you.</p>
+        </div>
+        <button id="customizeCloseBtn" class="icon-button" type="button" aria-label="Close">×</button>
+      </div>
+
+      <nav class="customize-tabs" aria-label="Customize sections">
+        <button id="customizeAppearanceTabBtn" class="customize-tab active" type="button">Appearance</button>
+        <button id="customizeAdvancedTabBtn" class="customize-tab" type="button">Advanced appearance</button>
+        <button id="customizeLabelsTabBtn" class="customize-tab" type="button">Button names</button>
+      </nav>
+
+      <div class="settings-sections">
+        <section class="settings-section appearance-settings-section appearance-studio-section">
+          <div class="settings-title">
+            <div><strong>Choose your look</strong><small>Everything previews instantly. Advanced controls stay out of the way until you ask for them.</small></div>
+            <div class="preview-actions">
+              <span id="livePreviewBadge" class="live-preview-badge">LIVE PREVIEW</span>
+              <button id="undoPreviewBtn" class="btn btn-quiet" type="button" disabled>Undo preview</button>
+            </div>
+          </div>
+
+          <div class="look-preset-grid">
+            <button id="applyCleanThemeBtn" class="look-preset clean" type="button"><span></span><strong>Clean</strong><small>Simple black and white</small></button>
+            <button id="applyMidnightThemeBtn" class="look-preset midnight" type="button"><span></span><strong>Midnight</strong><small>Soft blue aurora</small></button>
+            <button id="applySingularityThemeBtn" class="look-preset singularity" type="button"><span></span><strong>Singularity</strong><small>Large red black hole</small></button>
+            <button id="applyShadowSlaveThemeBtn" class="look-preset nightmare" type="button"><span></span><strong>Nightmare Spell</strong><small>Dream Realm violet</small></button>
+            <button id="applyMysteriesThemeBtn" class="look-preset mysteries" type="button"><span aria-hidden="true"></span><strong>Lord of the Mysteries</strong><small>Tarot</small></button>
+          </div>
+
+          <div class="settings-grid">
+            <label>Color theme
+              <select id="themeSelect">
+                <option value="void">Void</option>
+                <option value="seal">Deep ocean</option>
+                <option value="midnight">Midnight</option>
+                <option value="mint">Evergreen</option>
+                <option value="sunset">Ember</option>
+                <option value="light">Porcelain</option>
+                <option value="shadow-slave">Shadow Slave</option>
+                <option value="lord-of-the-mysteries">Lord of the Mysteries</option>
+              </select>
+            </label>
+            <label>Accent
+              <select id="accentSelect">
+                <option value="mono">Monochrome</option>
+                <option value="gold">Starlight</option>
+                <option value="ice">Ice blue</option>
+                <option value="violet">Violet</option>
+                <option value="mint">Mint</option>
+                <option value="amber">Amber</option>
+                <option value="custom">Custom color</option>
+              </select>
+            </label>
+            <label>Background scene
+              <select id="backgroundSelect">
+                <option value="black-hole">Massive black hole</option>
+                <option value="shadow-realm">Dream Realm eclipse</option>
+                <option value="aurora">Midnight aurora</option>
+                <option value="none">None</option>
+                <option value="grey-fog">Grey Fog</option>
+              </select>
+            </label>
+            <label>Background color
+              <select id="blackHolePaletteSelect">
+                <option value="inferno">Traditional red</option>
+                <option value="cosmic">Cosmic violet</option>
+                <option value="solar">Solar gold</option>
+                <option value="ice">Ice blue</option>
+                <option value="emerald">Emerald</option>
+                <option value="mono">Monochrome</option>
+                <option value="nightmare">Nightmare violet</option>
+              </select>
+            </label>
+            <label>Visual performance
+              <select id="powerModeSelect">
+                <option value="full">Full effects</option>
+                <option value="low">Low Power (static scene)</option>
+              </select>
+            </label>
+            <label>Reduced motion
+              <select id="reducedMotionSelect">
+                <option value="auto">Follow Windows</option>
+                <option value="on">Always reduce motion</option>
+                <option value="off">Allow animations</option>
+              </select>
+            </label>
+            <label>Startup screen
+              <select id="startupScreenSelect">
+                <option value="full">Cinematic</option>
+                <option value="brief">Quick</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+            <label>Launch animation
+              <select id="launchAnimationSelect">
+                <option value="gateway">Opening gateway</option>
+                <option value="ripple">Shadow ripple</option>
+                <option value="starlight">Starlight sweep</option>
+                <option value="minimal">Minimal pulse</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <label>Session visuals
+              <select id="sessionStyleSelect">
+                <option value="cards">Clean cards</option>
+                <option value="glow">Aura glow</option>
+                <option value="runes">Nightmare runes</option>
+                <option value="compact">Compact list</option>
+              </select>
+            </label>
+            <label>Account layout
+              <select id="accountLayoutSelect">
+                <option value="cards">Visual cards</option>
+                <option value="compact">Compact rows</option>
+              </select>
+            </label>
+            <label>Spacing
+              <select id="densitySelect">
+                <option value="comfortable">Comfortable</option>
+                <option value="compact">Compact</option>
+              </select>
+            </label>
+            <label>Font
+              <select id="fontSelect">
+                <option value="Nunito, Segoe UI, sans-serif">Nunito</option>
+                <option value="Arial Rounded MT Bold, Trebuchet MS, Segoe UI, sans-serif">Rounded</option>
+                <option value="Inter, Segoe UI, Arial, sans-serif">Inter / Segoe</option>
+                <option value="Segoe UI, Arial, sans-serif">Segoe UI</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+                <option value="Tahoma, sans-serif">Tahoma</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Consolas, monospace">Consolas</option>
+              </select>
+            </label>
+            <label>Text size
+              <input id="textScaleInput" type="range" min="85" max="125" step="5" />
+            </label>
+          </div>
+
+          <div class="studio-subsection advanced-appearance-control color-creator-section">
+            <div class="studio-subsection-head"><strong>Color creator</strong><small>Build your own accent and surface colors.</small></div>
+            <div class="color-creator-grid">
+              <label>Accent color<input id="customAccentInput" type="color" value="#9d8cff" /></label>
+              <label>Base color<input id="customBaseColorInput" type="color" value="#05050a" /></label>
+              <label>Panel color<input id="customPanelColorInput" type="color" value="#0c0b14" /></label>
+            </div>
+          </div>
+
+          <div class="studio-subsection advanced-appearance-control panel-style-section">
+            <div class="studio-subsection-head"><strong>Panel styling</strong><small>Choose how solid, soft, and rounded the interface feels.</small></div>
+            <div class="settings-grid">
+              <label>Panel shape
+                <select id="panelStyleSelect">
+                  <option value="soft">Soft glass</option>
+                  <option value="solid">Solid</option>
+                  <option value="outline">Outline</option>
+                  <option value="floating">Floating</option>
+                </select>
+              </label>
+              <label>Corner roundness<input id="panelRadiusInput" type="range" min="6" max="28" step="1" /></label>
+              <label>Panel transparency<input id="panelOpacityInput" type="range" min="55" max="100" step="5" /></label>
+              <label>Background brightness<input id="backgroundIntensityInput" type="range" min="20" max="140" step="5" /></label>
+            </div>
+          </div>
+
+          <div class="studio-subsection advanced-appearance-control page-theme-section">
+            <div class="studio-subsection-head"><strong>Per-page themes</strong><small>Give each part of Seal its own atmosphere.</small></div>
+            <div class="settings-grid">
+              <label>Main menu<select id="mainPageThemeSelect"></select></label>
+              <label>Customize page<select id="customizePageThemeSelect"></select></label>
+              <label>Launcher page<select id="launcherPageThemeSelect"></select></label>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-section launcher-settings-section">
+          <div class="settings-title"><div><strong>Launcher &amp; Roblox</strong><small>Updates, routing, and local client style.</small></div></div>
+          <div class="launcher-actions">
+            <button id="bootstrapperBtn" class="btn btn-quiet" type="button">Enable Seal launcher</button>
+            <button id="bootstrapperCheckBtn" class="btn btn-quiet" type="button">Check Roblox</button>
+            <button id="bootstrapperUpdateBtn" class="btn btn-quiet" type="button">Repair / update</button>
+            <button id="resetJoinCacheBtn" class="btn btn-quiet" type="button">Reset join cache</button>
+            <button id="repairJoinConnectionBtn" class="btn btn-quiet" type="button">Repair join connection</button>
+          </div>
+          <p id="bootstrapperStatusText" class="form-status" aria-live="polite">Checking launcher…</p>
+          <p id="joinConnectionStatus" class="form-status" role="status" aria-live="polite"></p>
+          <p id="joinCacheResetStatus" class="form-status" role="status" aria-live="polite"></p>
+          <div class="settings-grid">
+            <label>Game font
+              <select id="robloxFontSelect">
+                <option value="default">Default Roblox</option><option value="arial">Arial</option><option value="segoe">Segoe UI</option>
+                <option value="comic">Comic Sans</option><option value="consolas">Consolas</option><option value="verdana">Verdana</option>
+              </select>
+            </label>
+            <label>Cursor
+              <select id="robloxCursorSelect">
+                <option value="default">Default</option><option value="seal">Seal dot</option><option value="pink">Pink</option>
+                <option value="blue">Blue</option><option value="green">Green</option><option value="crosshair">Crosshair</option><option value="minimal">Minimal</option>
+              </select>
+            </label>
+            <label>Material style <span class="experimental-warning">Experimental · may not work</span>
+              <select id="robloxTextureSelect"><option value="default">Normal</option><option value="soft">Soft / low detail</option></select>
+            </label>
+            <label>Lighting <span class="experimental-warning">Experimental · may not work</span>
+              <select id="robloxLightingSelect">
+                <option value="normal">Normal Roblox</option>
+                <option value="fullbright">Fullbright+</option>
+              </select>
+            </label>
+            <label>Death sound
+              <select id="robloxSoundSelect">
+                <option value="default">Current Roblox</option><option value="classic_death">Classic Roblox</option>
+                <option value="rezero_death">Re:Zero</option><option value="persona5_last_surprise">Last Surprise</option><option value="mute_death">Muted</option>
+              </select>
+            </label>
+          </div>
+          <details class="launcher-more launcher-custom-assets">
+            <summary>Custom cursor and death sound</summary>
+            <div class="launcher-more-body">
+              <div class="asset-row">
+                <label>Custom cursor name<input id="customCursorName" type="text" value="My cursor" maxlength="80" /></label>
+                <button id="importCursorBtn" class="btn btn-quiet" type="button">Import PNG</button>
+                <button id="deleteCursorBtn" class="btn btn-danger-subtle" type="button">Delete</button>
+              </div>
+              <div class="asset-row">
+                <label>Custom sound name<input id="customDeathSoundName" type="text" value="My death sound" maxlength="80" /></label>
+                <button id="importDeathSoundBtn" class="btn btn-quiet" type="button">Import audio</button>
+                <button id="deleteDeathSoundBtn" class="btn btn-danger-subtle" type="button">Delete</button>
+              </div>
+            </div>
+          </details>
+          <div class="launcher-actions align-right">
+            <button id="restoreModsBtn" class="btn btn-quiet" type="button">Restore files</button>
+            <button id="applyModsBtn" class="btn btn-primary" type="button">Apply Roblox style</button>
+          </div>
+        </section>
+
+        <section class="settings-section appearance-settings-section interface-labels-section">
+          <div class="settings-title"><div><strong>Button names</strong><small>Optional wording for your workflow.</small></div></div>
+          <div class="settings-grid label-grid">
+            <label>Add account<input id="labelAddAccountInput" type="text" maxlength="28" /></label>
+            <label>Customize<input id="labelCustomizeInput" type="text" maxlength="28" /></label>
+            <label>Check sessions<input id="labelCheckCookiesInput" type="text" maxlength="28" /></label>
+            <label>Launch selected<input id="labelLaunchSelectedInput" type="text" maxlength="28" /></label>
+            <label>Destination<input id="labelJoinTargetInput" type="text" maxlength="28" /></label>
+            <label>FPS cap<input id="labelFpsCapInput" type="text" maxlength="18" /></label>
+            <label>Graphics<input id="labelGraphicsInput" type="text" maxlength="22" /></label>
+            <label>Performance<input id="labelFastFlagsInput" type="text" maxlength="18" /></label>
+            <label>Apply<input id="labelApplyInput" type="text" maxlength="18" /></label>
+            <label>Check status<input id="labelCheckSelectedStatusInput" type="text" maxlength="30" /></label>
+            <label>Close selected<input id="labelForceQuitInput" type="text" maxlength="30" /></label>
+          </div>
+        </section>
+      </div>
+
+      <input id="pauseHotkeySelect" type="hidden" value="F8" />
+      <input id="pauseOffLabelInput" type="hidden" value="Pause" />
+      <input id="pauseOnLabelInput" type="hidden" value="Resume" />
+      <input id="labelAntiAfkInput" type="hidden" value="Anti-AFK" />
+      <input id="labelFreezeInput" type="hidden" value="Freeze" />
+      <input id="labelUnfreezeInput" type="hidden" value="Unfreeze" />
+
+      <div class="settings-footer">
+        <span id="appVersionFooter">Seal Account Manager</span>
+        <div>
+          <button id="customizeResetBtn" class="btn btn-quiet" type="button">Reset</button>
+          <button id="customizeSaveBtn" class="btn btn-primary" type="button">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="launcherModal" class="modal-backdrop launcher-backdrop" hidden>
+    <div class="dialog-card launcher-window">
+      <div class="modal-head launcher-modal-head">
+        <div>
+          <span class="section-kicker">ROBLOX CONTROL</span>
+          <h2>Launcher</h2>
+          <p>Performance Off removes boost flags and keeps your chosen graphics level. Relaunch running accounts with Apply.</p>
+        </div>
+        <button id="launcherCloseBtn" class="icon-button" type="button" aria-label="Close">&times;</button>
+      </div>
+
+      <nav class="customize-tabs launcher-tabs" aria-label="Launcher sections">
+        <button id="launcherSettingsTabBtn" class="customize-tab active" type="button">Roblox settings</button>
+        <button id="launcherPresetsTabBtn" class="customize-tab" type="button">Performance presets</button>
+      </nav>
+
+      <div id="launcherSettingsPanel" class="launcher-tab-panel">
+        <div id="launcherSectionsHost" class="launcher-page-sections">
+        <section class="launcher-page-card background-settings-card">
+          <div class="launcher-page-title"><span>BACKGROUND &amp; STARTUP</span><strong>Keep tracking</strong><small>Open SAM from its tray icon. Choose Quit SAM to stop it completely.</small></div>
+          <div class="integration-block">
+            <label class="switch-row"><span><strong>Keep running when closed</strong><small>Close hides SAM in the system tray while playtime tracking continues.</small></span><input id="keepRunningInput" type="checkbox" checked /></label>
+            <label class="switch-row"><span><strong>Start with Windows in the background</strong><small>Start tracking at sign-in without opening the SAM window.</small></span><input id="startAtLoginInput" type="checkbox" checked /></label>
+          </div>
+          <p id="backgroundStatus" class="form-status" role="status"></p>
+          <div class="integration-block"><label class="switch-row"><span><strong>Roblox Play settings</strong><small>Use the last profile applied in SAM, or choose a saved account’s settings. Your Roblox login stays the same.</small></span><select id="externalPlayProfile"><option value="last">Last used in SAM</option></select></label><p id="externalPlayStatus" class="form-status" role="status">Play launches run quietly; no SAM launcher window.</p></div>
+          <button id="quitSamBtn" class="btn btn-quiet" type="button">Quit SAM</button>
+        </section>
+        <section class="launcher-page-card activity-integrations-card">
+          <div class="launcher-page-title"><span>SERVER INFO &amp; ALERTS</span><strong>Useful session details</strong><small>Tracking reads Roblox's local logs. It does not inject into Roblox or read its memory.</small></div>
+          <div class="integration-block">
+            <label class="switch-row"><span><strong>Approximate server region</strong><small>Sends the Roblox server IP to ipwho.is. Your Roblox cookie is never sent.</small></span><input id="serverRegionLookupInput" type="checkbox" /></label>
+            <label class="switch-row"><span><strong>Windows notifications</strong><small>Show launches, joins, server moves, closures, and sleep events.</small></span><input id="desktopNotificationsInput" type="checkbox" checked /></label>
+          </div>
+        </section>
+        </div>
+      </div>
+
+      <div id="launcherPresetsPanel" class="launcher-tab-panel preset-page" hidden>
+        <div class="preset-manager-head">
+          <div><span>PERFORMANCE PRESETS</span><strong>Your Roblox engine profiles</strong><small>Create a guided preset or import FastFlag JSON.</small></div>
+          <button id="newPerformancePresetBtn" class="btn btn-primary" type="button">+ New preset</button>
+        </div>
+
+        <section class="flag-library" aria-label="Graphics profiles">
+          <h3>Graphics profiles</h3>
+          <p>Choose more FPS, a balance, or higher image quality. Compare one change at a time in the same game.</p>
+          <label for="graphicsRenderer">Renderer preference</label>
+          <select id="graphicsRenderer"><option value="automatic">Automatic (recommended)</option><option value="d3d11">Direct3D 11 · experimental</option><option value="vulkan">Vulkan · experimental</option><option value="opengl">OpenGL · experimental</option></select>
+          <p id="graphicsRendererHint"></p>
+          <div id="graphicsProfiles" class="flag-library-list"></div>
+          <p id="graphicsProfileStatus" role="status">Create a preset, save it, and select it on an account before launching. Choose Off on that account to remove its preset flags.</p>
+          <details><summary>Higher resolution and GPU settings</summary><p>NVIDIA DSR/DLDSR and AMD VSR render at a higher resolution for image quality, usually at an FPS cost. Configure these in your GPU software if supported; Seal does not change driver or display settings. Sharpening changes apparent crispness and does not create new texture detail.</p><p>For a fair comparison, keep the game, camera, graphics level, FPS cap, and number of running accounts the same. Compare FPS and stutters, not just a single peak reading. Renderer changes require a new Roblox launch.</p></details>
+        </section>
+        <details id="flagLibrary" class="flag-library" open>
+          <summary>FastFlag library · Browse and build a preset</summary>
+          <p>18 documented Player flags · Allowlist checked September 13, 2026. Support can change with Roblox updates. Performance gains depend on your game and hardware.</p>
+          <div class="flag-library-filters">
+            <input id="flagLibrarySearch" type="search" placeholder="Search names, effects, or descriptions" aria-label="Search FastFlags" />
+            <select id="flagLibraryCategory" aria-label="Flag category"><option value="all">All categories</option><option value="selected">Selected flags</option></select>
+          </div>
+          <p>Starter selections replace your current selection; Undo restores it.</p>
+          <div id="flagLibraryStarters" class="flag-library-filters"></div>
+          <div id="flagLibraryList" class="flag-library-list"></div>
+          <p id="flagLibraryStatus" role="status" aria-live="polite"></p>
+          <details><summary>Preview exact JSON</summary><pre id="flagLibraryPreview"></pre></details>
+          <div class="modal-actions">
+            <button id="flagLibraryUndo" class="btn btn-quiet" type="button" disabled>Undo</button>
+            <button id="flagLibraryClear" class="btn btn-quiet" type="button">Clear selection</button>
+            <button id="flagLibraryReview" class="btn btn-primary" type="button" disabled>Review as preset</button>
+          </div>
+        </details>
+        <div id="performancePresetList" class="performance-preset-list"></div>
+        <div id="performancePresetEmpty" class="preset-empty-state">
+          <span>◇</span><strong>No custom presets yet</strong><small>Create one here and it will appear under Performance on every account.</small>
+        </div>
+
+        <section id="performancePresetEditor" class="performance-preset-editor" hidden>
+          <div class="preset-editor-heading">
+            <div><span id="presetEditorKicker">NEW PRESET</span><strong id="presetEditorTitle">Create a performance preset</strong><small>Only the choices in this preset are applied when an account launches.</small></div>
+            <button id="presetEditorCloseBtn" class="icon-button" type="button" aria-label="Close preset editor">&times;</button>
+          </div>
+
+          <label class="preset-name-field">Preset name
+            <input id="presetNameInput" type="text" maxlength="32" placeholder="Example: Low-end alts" />
+            <small>This exact name appears in the account Performance menu.</small>
+          </label>
+
+          <nav class="preset-editor-tabs" aria-label="Preset editor mode">
+            <button id="presetGuidedModeBtn" class="preset-editor-tab active" type="button">Guided settings</button>
+            <button id="presetImportModeBtn" class="preset-editor-tab" type="button">Import FastFlags</button>
+          </nav>
+
+          <div id="presetGuidedPanel" class="preset-mode-panel">
+            <div class="guided-preset-grid">
+              <label><span><strong>Geometry / mesh detail</strong><small>Controls how soon CSG and union geometry changes to a lower-polygon version at distance. It does not affect every ordinary MeshPart.</small></span>
+                <select id="presetMeshDetailSelect"><option value="default">Roblox default</option><option value="high">High · 250/500/750/1000 studs</option><option value="balanced">Balanced · 100/200/400/800</option><option value="low">Low · 25/50/100/200</option><option value="lowest">Lowest · immediate low detail</option></select>
+              </label>
+              <label><span><strong>Texture quality</strong><small>Lower levels use less video memory but make surfaces and clothing blurrier.</small></span>
+                <select id="presetTextureQualitySelect"><option value="default">Roblox default</option><option value="0">Level 0 · lowest</option><option value="1">Level 1 · low</option><option value="2">Level 2 · medium</option><option value="3">Level 3 · highest</option></select>
+              </label>
+              <label><span><strong>Edge smoothing (MSAA)</strong><small>Smooths jagged 3D edges. Higher sampling looks cleaner while using more GPU power.</small></span>
+                <select id="presetMsaaSelect"><option value="default">Roblox default</option><option value="1">1× · lightest</option><option value="2">2× · balanced</option><option value="4">4× · cleanest</option></select>
+              </label>
+              <label><span><strong>Grass draw distance</strong><small>Sets the farthest distance where terrain grass is drawn. Distances are measured in Roblox studs.</small></span>
+                <select id="presetGrassDistanceSelect"><option value="default">Roblox default</option><option value="off">Off</option><option value="50">50 studs</option><option value="100">100 studs</option><option value="200">200 studs</option><option value="400">400 studs</option></select>
+              </label>
+              <label><span><strong>Grass movement</strong><small>Reduces wind animation on terrain grass. This is also useful as a reduced-motion setting.</small></span>
+                <select id="presetGrassMotionSelect"><option value="default">Roblox default</option><option value="reduced">Reduced movement</option><option value="still">Still grass</option></select>
+              </label>
+              <label><span><strong>Windows scaling quality</strong><small>Preserving native resolution looks sharper above 100% Windows scaling but increases GPU work.</small></span>
+                <select id="presetDpiScalingSelect"><option value="default">Roblox default</option><option value="native">Preserve native resolution</option></select>
+              </label>
+              <label><span><strong>Fullscreen behavior</strong><small>Exclusive Alt+Enter may reduce latency, but window switching can flash and overlays may not appear.</small></span>
+                <select id="presetFullscreenSelect"><option value="default">Roblox default</option><option value="exclusive">Enable exclusive Alt+Enter</option></select>
+              </label>
+              <label class="experimental-setting"><span><strong>Graphics renderer <b>EXPERIMENTAL</b></strong><small>Automatic is recommended. Forcing Vulkan or OpenGL may improve or reduce performance and can cause visual problems.</small></span>
+                <select id="presetRendererSelect"><option value="automatic">Automatic</option><option value="d3d11">Direct3D 11</option><option value="vulkan">Vulkan</option><option value="opengl">OpenGL</option></select>
+              </label>
+              <label class="experimental-setting"><span><strong>Sky rendering <b>EXPERIMENTAL</b></strong><small>Flat gray removes the game sky and atmosphere. The visual change is large and the performance difference may be small.</small></span>
+                <select id="presetSkySelect"><option value="game">Use the game sky</option><option value="gray">Flat gray sky</option></select>
+              </label>
+            </div>
+            <button id="resetPresetChoicesBtn" class="btn btn-quiet" type="button">Restore every choice to Roblox default</button>
+          </div>
+
+          <div id="presetImportPanel" class="preset-mode-panel preset-import-panel" hidden>
+            <div id="presetImportDropzone" class="preset-import-dropzone" tabindex="0">
+              <span>{ }</span><strong>Import FastFlag JSON</strong><small>Choose a file, paste from your clipboard, or drop a .json file here.</small>
+              <div><button id="presetImportFileBtn" class="btn btn-primary" type="button">Choose JSON file</button><button id="presetPasteJsonBtn" class="btn btn-quiet" type="button">Paste JSON</button></div>
+            </div>
+            <label class="preset-json-field">JSON contents
+              <textarea id="presetJsonInput" spellcheck="false" placeholder='{"FIntDebugForceMSAASamples":"1"}'></textarea>
+            </label>
+            <button id="presetAnalyzeJsonBtn" class="btn btn-quiet" type="button">Analyze JSON</button>
+            <div id="presetImportSummary" class="preset-import-summary">No JSON analyzed yet.</div>
+            <details id="presetAdditionalFlagsDetails" class="preset-additional-flags" hidden><summary>Additional imported flags</summary><pre id="presetAdditionalFlagsPreview">{}</pre></details>
+          </div>
+
+          <p id="presetEditorStatus" class="form-status preset-editor-status" aria-live="polite"></p>
+          <div class="preset-editor-actions"><button id="presetCancelBtn" class="btn btn-quiet" type="button">Cancel</button><button id="presetSaveBtn" class="btn btn-primary" type="button">Create preset</button></div>
+        </section>
+      </div>
+
+      <div class="settings-footer launcher-footer"><span id="launcherFooterText">Launcher settings are separate from appearance.</span><div><button id="launcherCancelBtn" class="btn btn-quiet" type="button">Close</button><button id="launcherSaveBtn" class="btn btn-primary" type="button">Save launcher settings</button></div></div>
+    </div>
+  </div>
+
+  <div id="timeModal" class="modal-backdrop time-backdrop" hidden>
+    <div class="dialog-card time-window" role="dialog" aria-modal="true" aria-labelledby="timeWindowTitle">
+      <div class="modal-head time-modal-head">
+        <div>
+          <span class="section-kicker">PLAYTIME</span>
+          <h2 id="timeWindowTitle">Time</h2>
+          <p>See how long your SAM accounts have kept Roblox running.</p>
+        </div>
+        <button id="timeCloseBtn" class="icon-button" type="button" aria-label="Close">&times;</button>
+      </div>
+
+      <nav class="customize-tabs time-tabs" aria-label="Time sections">
+        <button id="timeAccountsTabBtn" class="customize-tab active" type="button">Roblox time</button>
+        <button id="timeExperiencesTabBtn" class="customize-tab" type="button">Games</button>
+      </nav>
+
+      <div class="time-filter-bar">
+        <div class="time-range-copy">
+          <span>SHOWING</span>
+          <strong id="timeRangeLabel">All time</strong>
+        </div>
+        <label class="time-preset-field">Time range
+          <select id="timeRangePreset">
+            <option value="all">All time</option>
+            <option value="hour">Last hour</option>
+            <option value="day">Last 24 hours</option>
+            <option value="week">Last 7 days</option>
+            <option value="month">Last 30 days</option><option value="twoMonths">Last 60 days</option><option value="threeMonths">Last 90 days</option>
+            <option value="custom">Custom duration</option>
+          </select>
+        </label>
+        <div id="timeCustomRange" class="time-custom-range" hidden>
+          <label>Months<input id="timeMonthsInput" type="number" min="0" max="120" value="0" /></label>
+          <label>Weeks<input id="timeWeeksInput" type="number" min="0" max="520" value="0" /></label>
+          <label>Days<input id="timeDaysInput" type="number" min="0" max="3650" value="1" /></label>
+          <label>Hours<input id="timeHoursInput" type="number" min="0" max="87600" value="0" /></label>
+          <button id="timeApplyRangeBtn" class="btn btn-primary" type="button">Apply</button>
+        </div>
+      </div>
+
+      <div class="time-content">
+        <section id="timeAccountsPanel" class="time-panel">
+          <div class="time-total-card">
+            <div>
+              <span>TOTAL ROBLOX TIME</span>
+              <strong id="timeGrandTotal">0m</strong>
+              <small id="timeGrandSubtitle">Across accounts tracked by SAM</small>
+            </div>
+            <div class="time-total-orbit" aria-hidden="true"><span></span><b></b></div>
+          </div>
+          <div class="time-list-heading">
+            <div><span>ACCOUNT LEADERBOARD</span><strong>Most Roblox time</strong></div>
+            <small>Open an account to see its games.</small>
+          </div>
+          <div id="timeAccountsList" class="time-ranking-list"></div>
+        </section>
+
+        <section id="timeExperiencesPanel" class="time-panel" hidden>
+          <div class="time-list-heading">
+            <div><span>YOUR LIBRARY</span><strong>Your games</strong></div>
+            <small>Pins stay at the top. First played uses the earliest recorded session or badge award. Badge-based dates are estimates.</small>
+          </div>
+          <div class="time-game-toolbar">
+            <input id="timeGameSearch" type="search" aria-label="Find a tracked game" placeholder="Find a game…" />
+            <label>Show<select id="timeGameFilter"><option value="all">All games</option><option value="favorites">Favorites</option><option value="pinned">Pinned</option></select></label>
+            <label>Sort by<select id="timeGameSort"><option value="badges-desc">Most badges owned</option><option value="badges-asc">Fewest badges owned</option><option value="playtime">Most time played</option><option value="oldest">First played: oldest</option><option value="newest">First played: newest</option><option value="name">Name A–Z</option></select></label>
+          </div>
+          <div id="timeExperiencesList" class="time-ranking-list"></div>
+        </section>
+      </div>
+
+      <p id="timeBadgeStatus" class="time-badge-status" role="status">Badge games show 0s until SAM records playtime. Badge ownership is lifetime progress.</p>
+      <p id="timeMetadataStatus" class="time-badge-status" role="status" hidden></p>
+      <p id="timeBadgeDatesStatus" class="time-badge-status" role="status" hidden></p>
+      <div class="settings-footer time-footer">
+        <span>Roblox Home and loading count toward Roblox time. Time from unlinked windows appears under Unlinked Roblox.</span>
+        <button id="timeSyncBadgesBtn" class="btn btn-quiet" type="button">Sync badges</button>
+        <button id="timeRefreshBtn" class="btn btn-quiet" type="button">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="bulkConfigModal" class="modal-backdrop" hidden>
+    <div class="dialog-card bulk-config-window" role="dialog" aria-modal="true" aria-labelledby="bulkConfigTitle">
+      <div class="modal-head">
+        <div>
+          <span class="section-kicker">BULK CONFIGURATION</span>
+          <h2 id="bulkConfigTitle">Configure accounts together</h2>
+          <p>Choose who to update, then change only the settings you want to replace.</p>
+        </div>
+        <button id="bulkConfigCloseBtn" class="icon-button" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="bulk-config-content">
+        <label>Apply to
+          <select id="bulkConfigTargetSelect">
+            <option value="selected">Selected accounts</option>
+            <option value="folder">Current folder</option>
+            <option value="all">Every saved account</option>
+          </select>
+        </label>
+        <div id="bulkConfigTargetSummary" class="bulk-target-summary">0 accounts selected</div>
+        <div class="bulk-config-grid">
+          <label><span><input id="bulkFpsEnabled" type="checkbox" /> FPS cap</span><input id="bulkFpsInput" type="number" min="1" step="1" value="60" title="Any positive whole number. Values below 5 may make Roblox appear frozen." /><small id="bulkFpsWarning" class="bulk-fps-warning" hidden>⚠ Below 5 FPS may make Roblox appear frozen or load very slowly.</small></label>
+          <label><span><input id="bulkGraphicsEnabled" type="checkbox" /> Graphics quality</span><input id="bulkGraphicsInput" type="number" min="1" max="10" value="1" /></label>
+          <label><span><input id="bulkPerformanceEnabled" type="checkbox" /> Performance</span>
+            <select id="bulkPerformanceSelect"><option value="max">Max FPS+</option><option value="balanced">Boost</option><option value="off">Off</option></select>
+          </label>
+          <label><span><input id="bulkVolumeEnabled" type="checkbox" /> Volume</span><input id="bulkVolumeInput" type="number" min="0" max="10" value="1" /></label>
+        </div>
+        <label class="bulk-relaunch-choice"><input id="bulkRelaunchInput" type="checkbox" /> Relaunch running accounts after saving</label>
+        <p id="bulkConfigStatus" class="form-status" aria-live="polite"></p>
+      </div>
+      <div class="settings-footer">
+        <span>Unchecked settings stay exactly as they are.</span>
+        <div><button id="bulkConfigCancelBtn" class="btn btn-quiet" type="button">Cancel</button><button id="bulkConfigApplyBtn" class="btn btn-primary" type="button">Apply settings</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notificationCenterModal" class="notification-center-backdrop" hidden>
+    <aside class="notification-center-panel" role="dialog" aria-modal="true" aria-labelledby="notificationCenterTitle">
+      <div class="notification-center-head">
+        <div><span class="section-kicker">SEAL ACTIVITY</span><h2 id="notificationCenterTitle">Notification center</h2></div>
+        <button id="notificationCenterCloseBtn" class="icon-button" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="notification-center-actions">
+        <button id="notificationJoinedFilterBtn" class="btn btn-quiet" type="button" aria-pressed="false">Games joined</button>
+        <button id="notificationResetFilterBtn" class="btn btn-quiet" type="button" disabled>Reset filter</button>
+        <button id="markNotificationsReadBtn" class="btn btn-quiet" type="button">Mark all read</button>
+        <button id="clearNotificationsBtn" class="btn btn-danger-subtle" type="button">Clear history</button>
+      </div>
+      <div id="notificationCenterList" class="notification-center-list"></div>
+    </aside>
+  </div>
+
+  <div id="launchAnimationLayer" class="launch-animation-layer" hidden aria-hidden="true"><div class="launch-animation-core"></div><div class="launch-animation-copy"><span>SEAL GATEWAY</span><strong>Opening session</strong></div></div>
+
+  <div id="startupScreen" class="startup-screen" hidden aria-hidden="true">
+    <div class="startup-emblem"><span></span></div>
+    <span id="startupKicker" class="startup-kicker">SEAL ACCOUNT MANAGER</span>
+    <strong id="startupTitle">Welcome back</strong>
+    <small id="startupSubtitle">Preparing your launch desk</small>
+  </div>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script src="appDialogs.js"></script>
+  <script src="badgeViews.js"></script>
+  <script src="gameLibrary.js"></script>
+  <script src="greyFogScene.js"></script>
+  <script src="tarotIllustrations.js"></script>
+  <script src="tarotDeck.js"></script>
+  <script src="renderer.js"></script>
+  <script src="flagCatalog.js"></script>
+  <script src="flagLibrary.js"></script>
+  <script src="graphicsProfiles.js"></script>
+  <script src="graphicsProfileControls.js"></script>
+  <script src="antiIdleControls.js"></script>
+  <script src="serverHubControls.js"></script>
+  <script src="backgroundControls.js"></script>
+  <script src="quietLaunchControls.js"></script>
+</body>
+</html>

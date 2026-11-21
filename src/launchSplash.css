@@ -1,0 +1,14 @@
+head, title, style, script { display: none !important; }
+*{box-sizing:border-box}
+body{margin:0;height:100vh;background:#fff;color:#333;font:18px 'Segoe UI',sans-serif;-webkit-app-region:drag;border:1px solid #d9d9d9;text-align:center;padding:0 30px}
+#hide{-webkit-app-region:no-drag;position:absolute;right:0;top:0;width:38px;height:30px;padding:0;border:0;background:transparent;color:#666;font:21px 'Segoe UI',sans-serif;cursor:pointer}
+#hide:hover{background:#eee}#hide:focus-visible{outline:2px solid #666;outline-offset:-3px}
+.logo{position:relative;width:110px;height:85px;overflow:hidden;margin:46px auto 24px}
+.logo img{position:absolute;width:172px;height:172px;max-width:none;left:-28px;top:-57px}
+#status{margin:0;height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:400;line-height:22px}
+#progress{position:relative;width:100%;height:18px;margin-top:21px;background:#ededed;overflow:hidden;border:1px solid #ddd}
+#runner{position:absolute;left:-120px;top:0;bottom:0;width:120px;background:#686b6e;animation:sweep 1.45s linear infinite;will-change:transform}
+@keyframes sweep{from{transform:translateX(0)}to{transform:translateX(560px)}}
+#progress.complete #runner{animation:none;transform:none;left:0;width:100%;background:#686b6e}
+#progress.failed #runner{animation:none;display:none}
+
