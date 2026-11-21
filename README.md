@@ -2,7 +2,7 @@
 
 Seal Account Manager (SAM) is a portable Windows app that was initially inspired from Roblox Account Manager becoming untrustable and likely a virus that spiraled into this launcher.
 
-[Download for Windows x64](https://github.com/azeal337/Seal-Account-Manager/releases/latest) · [Getting started](docs/GETTING-STARTED.md) · [Contributing](CONTRIBUTING.md)
+[Download for Windows x64](https://github.com/azeal337/Seal-Account-Manager/releases/latest) 
 
 ![SAM 1.00.00 with the Lord of the Mysteries theme](docs/screenshots/sam-tarot.png)
 ## Features
