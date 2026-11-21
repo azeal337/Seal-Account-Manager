@@ -1,0 +1,37 @@
+const fs=require('fs');
+const {writeTextAtomic}=require('./atomicFile');
+const id=value=>/^[1-9]\d{0,18}$/.test(String(value||''))?String(value):'';
+const image=value=>{try{const url=new URL(value);return url.protocol==='https:'&&/(^|\.)rbxcdn\.com$/i.test(url.hostname)?url.href:'';}catch{return '';}};
+function createExperienceMetadata(file,{resolvePlace,fetchDetails,onChange=()=>{},now=Date.now,delay=ms=>new Promise(r=>setTimeout(r,ms))}={}){
+ let places={},universes={},task=null,stopped=false,retryAt=0,revision=0;const queue=[],queued=new Set();
+ try{const data=JSON.parse(fs.readFileSync(file,'utf8'));for(const [key,p] of Object.entries(data.places||{}))if(id(key)&&p&&id(p.universeId))places[key]={universeId:id(p.universeId),checkedAt:Number(p.checkedAt)||0};for(const [key,g] of Object.entries(data.universes||{}))if(id(key)&&g&&typeof g.name==='string')universes[key]={universeId:key,placeId:id(g.placeId),name:g.name.slice(0,160),iconUrl:image(g.iconUrl),checkedAt:Number(g.checkedAt)||0};}catch{}
+ const status=()=>({busy:!!task,pending:queue.length,revision});
+ const changed=()=>{revision++;try{onChange(status());}catch{}};
+ const save=()=>writeTextAtomic(file,JSON.stringify({version:1,places,universes}));
+ function lookup(game){const placeId=id(game.placeId),universeId=id(game.universeId)||places[placeId]?.universeId;const detail=universes[universeId];const pending=queued.has(placeId?'place:'+placeId:'universe:'+universeId);const placeholder=/^(Place|Experience) \d+$/.test(game.name||'');return {...game,...(universeId?{universeId}:{}),...(detail?{...detail,metadataResolved:true}:placeholder?{name:pending?'Loading game details…':'Game details unavailable',metadataUnavailable:!pending}:{}),sourcePlaceId:placeId};}
+ async function work(){
+  while(queue.length&&!stopped){
+   const batch=queue.splice(0,10),ids=new Set();
+   for(let offset=0;offset<batch.length;offset+=2){
+    const results=await Promise.allSettled(batch.slice(offset,offset+2).map(async ref=>{
+     let universeId=id(ref.universeId)||places[ref.placeId]?.universeId;
+     if(!universeId){const result=await resolvePlace(ref.placeId);universeId=id(result.universeId);if(!universeId)throw Error('Roblox did not return this game’s universe.');places[ref.placeId]={universeId,checkedAt:now()};}
+     if(ref.fresh||!universes[universeId]||now()-universes[universeId].checkedAt>86400000||!universes[universeId].iconUrl)ids.add(universeId);
+    }));
+    if(results.some(result=>result.status==='rejected'&&result.reason.status===429)){retryAt=now()+60000;queue.unshift(...batch);return;}
+   }
+   try{if(ids.size&&!stopped){const details=await fetchDetails([...ids],batch.some(ref=>ref.fresh));for(const [key,g] of Object.entries(details||{}))if(id(key)&&g&&typeof g.name==='string'&&g.name.trim())universes[key]={universeId:id(key),placeId:id(g.placeId),name:g.name.slice(0,160),iconUrl:image(g.iconUrl),checkedAt:now()};}}
+   catch(error){if(error.status===429){retryAt=now()+60000;queue.unshift(...batch);return;}}
+   for(const ref of batch)queued.delete(ref.key);
+   if(!stopped){save();changed();if(queue.length)await delay(150);}
+  }
+ }
+ const attempts=new Map();
+ function enqueue(refs,{fresh=false}={}){
+  for(const raw of refs){const placeId=id(raw.placeId),universeId=id(raw.universeId);if(!placeId&&!universeId)continue;const key=placeId?'place:'+placeId:'universe:'+universeId;const found=lookup({placeId,universeId});if(!fresh&&found.metadataResolved&&found.iconUrl&&now()-found.checkedAt<86400000)continue;if(queued.has(key)||(!fresh&&attempts.has(key)&&now()-attempts.get(key)<60000))continue;queued.add(key);attempts.set(key,now());queue.push({key,placeId,universeId,fresh});}
+  if(!task&&queue.length&&!stopped&&now()>=retryAt){task=Promise.resolve().then(work).catch(()=>{}).finally(()=>{task=null;changed();});changed();}
+  return status();
+ }
+ return {enqueue,lookup,status,whenIdle:()=>task||Promise.resolve(),stop:()=>{stopped=true;queue.length=0;}};
+}
+module.exports={createExperienceMetadata};
