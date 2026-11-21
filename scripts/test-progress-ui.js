@@ -1,0 +1,51 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { app } = require('electron');
+const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'seal-progress-'));
+app.setPath('userData', path.join(temp, 'userdata'));
+fs.mkdirSync(app.getPath('userData'), { recursive: true });
+process.env.SEAL_TEST_ROBLOX_ROOT = path.join(temp, 'Roblox');
+process.argv.push('--seal-launch-test');
+const quit = app.quit.bind(app); app.quit = () => {};
+const service = require('../src/robloxProgress');
+service.profiles = async () => [{ id: 123, name: 'NewUsername' }];
+service.artwork = async () => 'https://tr.rbxcdn.com/test-game.png';
+require('../src/robloxApi').getAvatarUrls = async () => ({});
+const store = require('../src/accountStore');
+let account;
+app.whenReady().then(() => { account = store.addAccount({ username: 'OldUsername', userId: 123, cookie: 'dummy', graphicsQuality: 7, volume: 3 }); });
+service.badges = async (payload, accounts) => ({ universeId: '789', checkedAt: new Date().toISOString(), nextCursor: payload.cursor ? null : 'next', badges: [{ id: payload.cursor ? '11' : '10', name: payload.cursor ? 'Second badge' : 'First badge', description: 'Description', enabled: true, iconUrl: '', accounts: accounts.map(a => ({ accountId: a.id, username: a.username, status: 'earned', awardedDate: '2025-01-02T03:04:05Z' })) }] });
+const deadline = setTimeout(() => app.exit(1), 20000);
+app.on('browser-window-created', (_event, window) => {
+  window.webContents.setBackgroundThrottling(false);
+  window.webContents.once('did-finish-load', async () => {
+    const evaluate = code => window.webContents.executeJavaScript(code);
+    const wait = async code => { for (let i = 0; i < 100; i++) { if (await evaluate(code)) return; await new Promise(r => setTimeout(r, 40)); } throw Error(code); };
+    try {
+      await evaluate('window.api.refreshAvatars()');
+      assert.equal(store.listAccounts()[0].username, 'NewUsername');
+      assert.equal(store.listAccounts()[0].id, account.id);
+      assert.equal(store.listAccounts()[0].graphicsQuality, 7);
+      assert.equal(store.listAccounts()[0].volume, 3);
+      const game = { key: 'universe:789', universeId: '789', name: 'Test game', totalMs: 1000, accounts: [] };
+      await evaluate(`window.gameCard=createTimeRankCard(${JSON.stringify(game)},0,'experience'); document.body.append(window.gameCard); window.gameCard.querySelector('.time-rank-summary').click();window.gameCard.querySelector('.badge-section').open=true;`);
+      await wait(`window.gameCard.textContent.includes('First badge')`);
+      assert.match(await evaluate('window.gameCard.textContent'), /NewUsername/);
+      await evaluate(`window.gameCard.querySelector('.badge-section > button').click()`);
+      await wait(`window.gameCard.textContent.includes('Second badge')`);
+      const accountItem = { key: 'user:123', accountId: account.id, username: 'NewUsername', totalMs: 1000, experiences: [game] };
+      await evaluate(`window.accountCard=createTimeRankCard(${JSON.stringify(accountItem)},0,'account'); document.body.append(window.accountCard); window.accountCard.querySelector('.time-rank-summary').click();window.accountCard.querySelector('.badge-section').open=true;`);
+      await wait(`window.accountCard.textContent.includes('First badge')`);
+      assert.match(await evaluate('window.accountCard.textContent'), /✓ Earned/);
+      await evaluate(`window.artItem=document.createElement('div');document.body.append(window.artItem);decorateSealSession(window.artItem,{universeId:789});`);
+      await wait(`window.artItem.classList.contains('session-game-art')`);
+      assert.match(await evaluate('window.artItem.style.backgroundImage'), /test-game/);
+      console.log('PASS: actual UI+IPC game/account badges, pagination, award rendering, session artwork and username refresh preserving identity/settings.');
+      clearTimeout(deadline); app.quit = quit; quit();
+    } catch (error) { console.error(error); app.exit(1); }
+  });
+});
+app.on('will-quit', () => { try { fs.rmSync(temp, { recursive: true, force: true }); } catch {} });
+require('../main');

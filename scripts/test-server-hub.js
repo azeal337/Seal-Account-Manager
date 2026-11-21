@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),fs=require('fs'),os=require('os'),path=require('path');
+const {createServerHub,placeId,nextOccurrence}=require('../src/serverHub');
+(async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'seal-server-hub-')),file=path.join(dir,'hub.json');let time=10000000,calls=0,fail=false;
+ const id='11111111-1111-1111-1111-111111111111',second='22222222-2222-2222-2222-222222222222';
+ const hub=createServerHub(file,{now:()=>time,fetchJson:async url=>{calls++;if(fail)throw Error('rate limit');const u=new URL(url);assert.equal(u.searchParams.get('sortOrder'),'Desc');return {data:[{id:u.searchParams.has('cursor')?second:id,playing:8,maxPlayers:10},{id:'33333333-3333-3333-3333-333333333333',playing:10,maxPlayers:10}],nextPageCursor:u.searchParams.has('cursor')?null:'page2'};}});
+ assert.equal(placeId('https://www.roblox.com/games/123/Hello'),'123');assert.equal(placeId('https://roblox.com.evil.test/games/123'),'');
+ const page=await hub.list({placeId:'123'});assert.equal(page.rows.length,1);assert.equal(page.cursor,'page2');const firstSeen=page.rows[0].firstSeen;
+ await hub.list({placeId:'123'});assert.equal(calls,1);time+=11000;await hub.list({placeId:'123'});assert.equal((await hub.list({placeId:'123'})).rows[0].firstSeen,firstSeen);
+ const next=await hub.list({placeId:'123',cursor:'page2'});assert.equal(next.rows[0].id,second);assert.equal(next.cursor,null);
+ assert.equal((await hub.list({placeId:'123',includeFull:true})).rows.length,2);
+ fail=true;await assert.rejects(hub.list({placeId:'456'}),/rate limit/);fail=false;assert.equal((await hub.list({placeId:'456'})).rows.length,1,'failed requests must be retryable');
+ hub.record([{accountId:'account',username:'One',userId:1,activity:{placeId:123,jobId:id,confirmed:false}}]);assert.equal(hub.history().length,0);
+ hub.record([{accountId:'account',username:'One',userId:1,cookie:'DO-NOT-PERSIST',activity:{placeId:123,jobId:id,confirmed:true}}]);
+ time+=20000;hub.record([{accountId:'account',username:'Renamed',userId:1,activity:{placeId:123,jobId:id,confirmed:true}}]);assert.equal(hub.history().length,1);assert.equal(hub.history()[0].username,'Renamed');
+ hub.record([{accountId:'account2',activity:{placeId:123,jobId:id,confirmed:true,disconnected:true}}]);assert.equal(hub.history().length,1);
+ const timer=hub.saveTimer({placeId:'123',label:'Boss',minutes:60,anchor:time+1000});assert.equal(nextOccurrence(timer,time),time+1000);assert.equal(nextOccurrence(timer,time+1000),time+3601000);
+ const restored=createServerHub(file,{now:()=>time});assert.equal(restored.history().length,1);assert.equal(restored.timers().length,1);assert(!fs.readFileSync(file,'utf8').includes('DO-NOT-PERSIST'));
+ restored.removeTimer(timer.id);assert.equal(restored.timers().length,0);assert.throws(()=>restored.saveTimer({placeId:'123',label:'bad',minutes:0,anchor:time}),/repeat interval/);
+ console.log('PASS: server pagination/cache/full filtering/retry; first-seen persistence; confirmed-only history/rename/dedup; timer boundary/restart/delete; no credentials persisted.');
+})().catch(e=>{console.error(e);process.exitCode=1});

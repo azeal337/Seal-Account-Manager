@@ -1,0 +1,31 @@
+const assert = require('node:assert/strict');
+let calls = [];
+global.fetch = async (url, options) => {
+  calls.push({ url, options });
+  if (url.includes('/universes/')) return Response.json({ data: [{ id: 10, name: 'First', enabled: true }, { id: 11, name: 'Second' }], nextPageCursor: 'next/page' });
+  if (url.includes('badges/icons')) return Response.json({ data: [{ targetId: 10, imageUrl: 'https://tr.rbxcdn.com/test.png' }] });
+  if (url.includes('/users/123/')) return Response.json({ data: [{ badgeId: 10, awardedDate: '2025-01-02T03:04:05Z' }] }, { headers: { 'set-cookie': '.ROBLOSECURITY=rotated; Path=/;' } });
+  if (url.includes('/users/456/')) return new Response('{}', { status: 429 });
+  if (url.includes('multiget/thumbnails')) return Response.json({ data: [{ thumbnails: [{ imageUrl: 'https://tr.rbxcdn.com/game.png' }] }] });
+  if (url.includes('users.roblox.com')) return Response.json({ data: [{ id: 123, name: 'Renamed' }] });
+  throw Error('Unexpected test request');
+};
+const api = require('../src/robloxProgress');
+(async () => {
+  let rotated = '';
+  const accounts = [{ id: 'a', userId: 123, username: 'FirstUser' }, { id: 'b', userId: 456, username: 'SecondUser' }];
+  const page = await api.badges({ universeId: 789 }, accounts, () => ({ cookie: 'dummy', onRotation: value => rotated = value }));
+  assert.equal(page.nextCursor, 'next/page');
+  assert.equal(page.badges[0].accounts[0].status, 'earned');
+  assert.equal(page.badges[0].accounts[0].awardedDate, '2025-01-02T03:04:05.000Z');
+  assert.equal(page.badges[1].accounts[0].status, 'not-returned');
+  assert.equal(page.badges[1].accounts[1].status, 'unknown');
+  assert.equal(rotated, 'rotated');
+  assert(!JSON.stringify(page).includes('dummy'));
+  await api.badges({ universeId: 789, cursor: 'next/page' }, []);
+  assert(calls.some(c => c.url.includes('cursor=next%2Fpage')));
+  assert.equal((await api.profiles(accounts))[0].name, 'Renamed');
+  assert.equal(await api.artwork(789), 'https://tr.rbxcdn.com/game.png');
+  assert(calls.filter(c => c.options.headers?.Cookie).every(c => c.url.startsWith('https://badges.roblox.com/')));
+  console.log('PASS: badge pages, dates, missing/unknown distinction, cookie rotation and isolation, profiles and artwork.');
+})().catch(error => { console.error(error); process.exitCode = 1; });
