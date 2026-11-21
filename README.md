@@ -8,13 +8,12 @@ Seal Account Manager (SAM) is a portable Windows app for managing Roblox account
 
 ## Features
 
-- Saved accounts, bulk import and settings, colored folders, and account pinning.
-- Multi-account launches, saved destinations, public server browser, and server history.
-- Session dashboard with freeze and wake controls, Anti-AFK, join notifications, and optional Windows alerts.
-- Quiet Roblox Home and website Play handling, background playtime tracking, and hidden startup at Windows sign-in.
+- Save accounts, bulk import and export, colored folders and pin to accounts.
+- Multi-account launches, save destinations, public server browser, server history.
+- Session dashboard with freeze and wake controls, Anti-AFK, join message & optional Windows notifications.
 - Games library with playtime, favorites, pins, and cached badge ownership and award dates.
-- FPS, graphics, volume, FastFlag presets, and Roblox client customization.
-- Interface themes and per-page appearance settings, including Lord of the Mysteries with an animated Grey Fog scene and tarot-style panels.
+- FPS, graphics, volume, Fast Flag presets, and Roblox client modification.
+
 
 ## Run SAM
 
